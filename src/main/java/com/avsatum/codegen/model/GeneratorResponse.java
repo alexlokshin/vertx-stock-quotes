@@ -1,12 +1,13 @@
 package com.avsatum.codegen.model;
 
-public class GeneratorResponse extends AbstractResponse{
-    private String code = "";
+public class GeneratorResponse extends AbstractResponse {
+    private StockResponse response = new StockResponse();
 
-    public String getCode() {
-        return code;
+    public StockResponse getResponse() {
+        return response;
     }
-    public void setCode(String code) {
-        this.code = code;
+
+    public void setResponse(StockResponse response) {
+        this.response = response;
     }
 }

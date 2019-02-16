@@ -3,6 +3,7 @@ package com.avsatum.codegen;
 import com.avsatum.codegen.model.AbstractResponse;
 import com.avsatum.codegen.model.ErrorResponse;
 import com.avsatum.codegen.model.GeneratorResponse;
+import com.avsatum.codegen.model.StockResponse;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
@@ -47,7 +48,7 @@ public class MainVerticle extends AbstractVerticle {
 
 	private void healthCheck(RoutingContext routingContext) {
 		routingContext.response().putHeader("content-type", "application/json").setStatusCode(200)
-					.end("{\"Status\": \"OK\"}");
+				.end("{\"Status\": \"OK\"}");
 	}
 
 	private void generateCode(RoutingContext routingContext) {
@@ -60,8 +61,15 @@ public class MainVerticle extends AbstractVerticle {
 			AbstractResponse response = null;
 			if (ar.succeeded()) {
 				System.out.println("Received reply: " + ar.result().body());
-				response = new GeneratorResponse();
-				((GeneratorResponse) response).setCode(ar.result().body().toString());
+
+				try {
+					response = new GeneratorResponse();
+					StockResponse resp = Json.decodeValue(ar.result().body().toString(), StockResponse.class);
+					((GeneratorResponse) response).setResponse(resp);
+				} catch (Exception ex) {
+					response = new ErrorResponse();
+					((ErrorResponse) response).setMessage(ex.getMessage());
+				}
 			} else {
 				response = new ErrorResponse();
 				((ErrorResponse) response).setMessage(ar.cause().getMessage());
