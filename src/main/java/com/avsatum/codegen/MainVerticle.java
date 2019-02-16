@@ -33,6 +33,7 @@ public class MainVerticle extends AbstractVerticle {
 
 		Router router = Router.router(vertx);
 		router.get("/api/:param").handler(this::generateCode);
+		router.get("/").handler(this::healthCheck);
 
 		server = vertx.createHttpServer().requestHandler(router::accept).listen(8080, http -> {
 			if (http.succeeded()) {
@@ -42,6 +43,11 @@ public class MainVerticle extends AbstractVerticle {
 				startFuture.fail(http.cause());
 			}
 		});
+	}
+
+	private void healthCheck(RoutingContext routingContext) {
+		routingContext.response().putHeader("content-type", "application/json").setStatusCode(200)
+					.end("{\"Status\": \"OK\"}");
 	}
 
 	private void generateCode(RoutingContext routingContext) {
