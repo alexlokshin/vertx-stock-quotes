@@ -26,20 +26,26 @@ public class MainVerticle extends AbstractVerticle {
 			if (res.succeeded()) {
 				String deploymentID = res.result();
 				System.out.println("Other verticle deployed ok, deploymentID = " + deploymentID);
+				deployServer(startFuture);
 			} else {
 				res.cause().printStackTrace();
 				System.exit(1);
 			}
 		});
 
+		
+	}
+
+	private void deployServer(Future<Void> startFuture	) {
 		Router router = Router.router(vertx);
-		router.get("/api/:param").handler(this::generateCode);
+		router.get("/quote/:param").handler(this::getQuote);
 		router.get("/").handler(this::healthCheck);
 
 		server = vertx.createHttpServer().requestHandler(router::accept).listen(8080, http -> {
 			if (http.succeeded()) {
 				startFuture.complete();
 				System.out.println("HTTP server started on http://localhost:8080");
+				vertx.eventBus().send("com.avsatum.quote", "GOOG");
 			} else {
 				startFuture.fail(http.cause());
 			}
@@ -51,24 +57,22 @@ public class MainVerticle extends AbstractVerticle {
 				.end("{\"Status\": \"OK\"}");
 	}
 
-	private void generateCode(RoutingContext routingContext) {
+	private void getQuote(RoutingContext routingContext) {
 		String paramValue = routingContext.request().getParam("param");
 
-		DeliveryOptions opts = new DeliveryOptions();
-		opts.setSendTimeout(1000);
-
+		DeliveryOptions opts = new DeliveryOptions().setSendTimeout(200);
+		long time = System.currentTimeMillis();
 		vertx.eventBus().send("com.avsatum.quote", paramValue, opts, ar -> {
+			System.out.println("Responded in "+(System.currentTimeMillis()-time)+" ms");
 			AbstractResponse response = null;
 			if (ar.succeeded()) {
-				System.out.println("Received reply: " + ar.result().body());
-
 				try {
 					response = new GeneratorResponse();
 					StockResponse resp = Json.decodeValue(ar.result().body().toString(), StockResponse.class);
 					((GeneratorResponse) response).setResponse(resp);
 				} catch (Exception ex) {
 					response = new ErrorResponse();
-					((ErrorResponse) response).setMessage(ex.getMessage());
+					((ErrorResponse) response).setMessage(ar.result().body().toString());
 				}
 			} else {
 				response = new ErrorResponse();
