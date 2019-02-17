@@ -40,11 +40,15 @@ public class HttpClient extends AbstractVerticle {
                                 response.exceptionHandler(future::fail).bodyHandler(buffer -> {
                                     try {
                                         Document doc = sax.build(new InputSource(new StringReader(buffer.toString())));
-                                        String price = doc.getRootElement().getChild("LastPrice").getText();
-                                        String symbol = doc.getRootElement().getChild("Symbol").getText();
                                         StockResponse resp = new StockResponse();
-                                        resp.setPrice(Float.parseFloat(price));
-                                        resp.setSymbol(symbol);
+                                        resp.setPrice(
+                                                Float.parseFloat(doc.getRootElement().getChild("LastPrice").getText()));
+                                        resp.setSymbol(doc.getRootElement().getChild("Symbol").getText());
+                                        resp.setStatus(doc.getRootElement().getChild("Status").getText());
+                                        resp.setTimestamp(doc.getRootElement().getChild("Timestamp").getText());
+                                        resp.setChange(
+                                                Float.parseFloat(doc.getRootElement().getChild("Change").getText()));
+
                                         future.complete(Json.encode(resp));
                                     } catch (Exception ex) {
                                         future.fail(ex.getMessage());
